@@ -32,7 +32,7 @@
     Nothing is written to %TEMP%, %APPDATA% or PATH.
 
     Fresh machine, one line:
-      irm https://raw.githubusercontent.com/OWNER/REPO/main/install.ps1 | iex
+      irm https://raw.githubusercontent.com/love-156/mpv_backup/main/install.ps1 | iex
 
     After editing your config:
       cd "$env:LOCALAPPDATA\Programs\mpv\portable_config"
@@ -90,7 +90,7 @@ param(
 # ---------------------------------------------------------------------------
 # Settings you may want to change
 # ---------------------------------------------------------------------------
-$DefaultRepoUrl = 'https://github.com/OWNER/REPO.git'
+$DefaultRepoUrl = 'https://github.com/love-156/mpv_backup.git'
 $ReleaseApi     = 'https://api.github.com/repos/shinchiro/mpv-winbuild-cmake/releases/latest'
 $GitReleaseApi  = 'https://api.github.com/repos/git-for-windows/git/releases/latest'
 $SevenZipUrl    = 'https://www.7-zip.org/a/7zr.exe'
