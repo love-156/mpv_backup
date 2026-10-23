@@ -8,6 +8,8 @@
     that bootstraps a new machine.
 
     Install mode (new machine, or when run from outside portable_config):
+      - installs into a folder named mpv inside the directory the command is
+        run from: "cd D:\Tools" then the one-liner gives you D:\Tools\mpv
       - makes sure git is available; if the machine has none, a portable
         MinGit is downloaded into <install-dir>\tools\git
       - downloads the latest Windows mpv build
@@ -31,11 +33,12 @@
 
     Nothing is written to %TEMP%, %APPDATA% or PATH.
 
-    Fresh machine, one line:
+    Fresh machine, one line (installs into .\mpv of the current directory):
+      cd D:\Tools
       irm https://raw.githubusercontent.com/love-156/mpv_backup/main/install.ps1 | iex
 
     After editing your config:
-      cd "$env:LOCALAPPDATA\Programs\mpv\portable_config"
+      cd <install-dir>\portable_config
       .\install.ps1
 
 .PARAMETER Install
@@ -51,7 +54,7 @@
 .PARAMETER RepoUrl
     Override the config repository URL.
 .PARAMETER InstallDir
-    Folder that holds mpv.exe. Default: %LOCALAPPDATA%\Programs\mpv
+    Folder that holds mpv.exe. Default: .\mpv under the current directory.
 .PARAMETER MpvUrl
     Direct URL to an mpv .7z archive; skips the release lookup.
 .PARAMETER Arch
@@ -636,13 +639,32 @@ function Mpv-Main {
     if (-not $InstallDir) {
         if ($leafIsPortable) {
             $InstallDir = [IO.Path]::GetDirectoryName($localRepo)
-        } elseif ($env:LOCALAPPDATA) {
-            $InstallDir = Join-Path $env:LOCALAPPDATA 'Programs\mpv'
         } else {
-            $InstallDir = Join-Path $env:USERPROFILE 'mpv'
+            # "Run it here, install it here": the current directory gets a mpv folder.
+            $cwd = (Get-Location).Path
+            if ((Test-Path -LiteralPath (Join-Path $cwd 'portable_config\.git')) -or
+                (Test-Path -LiteralPath (Join-Path $cwd 'mpv.exe'))) {
+                # Already an install root (re-run for an update): do not nest mpv\mpv.
+                $InstallDir = $cwd
+            } else {
+                $InstallDir = Join-Path $cwd 'mpv'
+            }
         }
     }
     $InstallDir = [IO.Path]::GetFullPath($InstallDir)
+
+    # Fail early with a readable message instead of a raw New-Item/OS error.
+    try {
+        if (-not (Test-Path -LiteralPath $InstallDir)) {
+            New-Item -ItemType Directory -Path $InstallDir -Force -ErrorAction Stop | Out-Null
+        }
+        $probe = Join-Path $InstallDir ('.mpv-write-test-' + [guid]::NewGuid().ToString('N'))
+        New-Item -ItemType File -Path $probe -ErrorAction Stop | Out-Null
+        Remove-Item -LiteralPath $probe -Force -ErrorAction SilentlyContinue
+    } catch {
+        throw "Cannot write to $InstallDir. Change to a folder you are allowed to write to (for example: cd D:\Tools) and run the command again."
+    }
+
     $portable = Join-Path $InstallDir 'portable_config'
 
     if ($mode -eq 'sync') {
